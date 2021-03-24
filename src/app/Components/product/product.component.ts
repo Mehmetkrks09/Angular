@@ -1,8 +1,13 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 import { Observable } from 'rxjs';
+import { Action } from 'rxjs/internal/scheduler/Action';
+import { CartItem } from 'src/app/models/cartItem';
+import { listResponseModul } from 'src/app/models/listResponseModel';
 import { product } from 'src/app/models/product';
+import { CartService } from 'src/app/Services/cart.service';
 
-import { productResponseModel } from 'src/app/models/productResponseModel';
 import { ProductService } from 'src/app/Services/product.service';
 
 @Component({
@@ -11,24 +16,42 @@ import { ProductService } from 'src/app/Services/product.service';
   styleUrls: ['./product.component.css'],
 })
 export class ProductComponent implements OnInit {
+  products: product[] = [];
+  dataLoaded = false;
+  filterText="";
 
-
-  products:product[]= [];
-  dataLoaded=false
- 
-  productResponseModel:productResponseModel={
-    data:this.products,
-    message:"",
-    success:true
-  };
-
-  constructor(private productService:ProductService) {}
+  constructor(
+    private productService: ProductService,
+    private activatedRouted: ActivatedRoute,
+    private toastrService:ToastrService,
+    private cartService:CartService,
+    
+  ) {}
 
   ngOnInit(): void {
-   this.getproducts()
+    this.activatedRouted.params.subscribe(params => {
+      if (params['categoryId']) {
+        this.getproductsByCategory(params['categoryId'])
+      } 
+      else {
+        this.getproducts();
+      }
+    });
   }
   getproducts() {
-    this.productService.getproducts().subscribe(response=>{this.products=response.data})
-    };
+    this.productService.getproducts().subscribe((response) => {
+      this.products = response.data;
+    });
   }
-
+  getproductsByCategory(categoryId: number) {
+    this.productService
+      .getproductsByCategory(categoryId)
+      .subscribe((response) => {
+        this.products = response.data;
+      }); 
+  }
+  addToCart(product:product){
+   this.toastrService.success("Sepete Eklendi",product.productName)
+   this.cartService.addToCart(product)
+  }
+}
